@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "lao-huangli": {
+      "source": "modelscope.cn",
+      "sourceType": "well-known",
+      "computedHash": "9014d485b31f4df77544515b465ebc82e825daf85491058cb05cf9b1b0e1bff9"
+    },
+    "rollinggo-flight-skill": {
+      "source": "modelscope.cn",
+      "sourceType": "well-known",
+      "computedHash": "d88c92bcccf53f7cd09fe9f2074a2c0eb43b21924204b7e954c903106a56ece9"
+    }
+  }
+}
