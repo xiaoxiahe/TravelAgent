@@ -1,0 +1,48 @@
+0:00:03 Tab1 PageLoad
+0:00:04 Tab2 StartNav4 #auto_toplevel
+0:00:04 Browser1 Insert active Tab2 at 1
+0:00:04 Tab2 FinishNav4
+0:00:04 Tab2 PageLoad
+0:00:04 Tab2 StartNav5 #typed
+0:00:05 Tab2 FinishNav5
+0:00:07 Tab2 StartNav6 #renderer-script #link
+0:00:07 Tab2 FinishNav6
+0:00:09 Tab2 StartNav7 #renderer-script #auto_subframe
+0:00:09 Tab2 FinishNav7
+0:00:09 Tab2 PageLoad
+0:00:09 Tab2 StartNav8 #renderer-script #link
+0:00:09 Tab2 FinishNav8
+0:00:09 Tab2 StartNav9 #renderer-script #auto_subframe
+0:00:09 Tab2 FinishNav9
+0:00:09 Tab2 PageLoad
+0:00:10 Tab2 PageLoad
+0:00:15 Tab2 StartNav10 #renderer-script #auto_subframe
+0:00:15 Tab2 FinishNav10
+0:00:15 Tab2 PageLoad
+0:00:30 Memory Pressure: Moderate
+0:00:35 Memory Pressure: None
+0:01:20 Memory Pressure: Moderate
+0:01:25 Memory Pressure: None
+0:01:30 Memory Pressure: Moderate
+0:01:35 Memory Pressure: None
+0:01:50 Memory Pressure: Moderate
+0:01:55 Memory Pressure: None
+0:04:20 Memory Pressure: Moderate
+0:04:30 Memory Pressure: Moderate
+0:04:40 Memory Pressure: Moderate
+0:04:50 Memory Pressure: Moderate
+0:05:00 Memory Pressure: None
+0:05:25 Memory Pressure: Moderate
+0:05:35 Memory Pressure: Moderate
+0:05:45 Memory Pressure: Moderate
+0:05:55 Memory Pressure: Moderate
+0:06:05 Memory Pressure: Moderate
+0:06:15 Memory Pressure: Moderate
+0:06:25 Memory Pressure: Moderate
+0:06:35 Memory Pressure: Moderate
+0:06:45 Memory Pressure: Moderate
+0:06:55 Memory Pressure: Moderate
+0:07:00 Memory Pressure: None
+0:07:05 Memory Pressure: Moderate
+0:07:15 Memory Pressure: Moderate
+0:07:25 Memory Pressure: Moderate
