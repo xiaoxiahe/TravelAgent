@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小途 - AI旅行规划</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #ff6b6b;
+            --secondary: #4ecdc4;
+            --background: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #2d3436;
+            --text-light: #636e72;
+            --border: #e0e0e0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 16px;
+            --surface-soft: #fff7f5;
+            --surface-muted: #f7f7fb;
+            --accent-border: rgba(255, 107, 107, 0.18);
+            --code-bg: #2d3436;
+            --code-text: #f8f9fa;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #ff8e53 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            margin-top: 5px;
+            font-size: 0.95rem;
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 180px);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .new-session-btn {
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: #fff;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .session-item {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .session-item:hover,
+        .session-item.active {
+            border-color: var(--primary);
+            background: #fff5f5;
+        }
+
+        .session-item-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.92rem;
+        }
+
+        .session-item-meta {
+            color: var(--text-light);
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .session-item-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        .session-delete-btn {
+            border: none;
+            background: transparent;
+            color: #d6336c;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .empty-sessions {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            padding: 10px 4px;
+        }
+
+        /* Chat Area */
+        .chat-container {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 180px);
+            min-height: 500px;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message-content {
+            padding: 16px 20px;
+            border-radius: 18px;
+            line-height: 1.8;
+            font-size: 1rem;
+            overflow-wrap: anywhere;
+        }
+
+        .markdown-body {
+            display: grid;
+            gap: 0.9rem;
+        }
+
+        .markdown-body > :first-child {
+            margin-top: 0;
+        }
+
+        .markdown-body > :last-child {
+            margin-bottom: 0;
+        }
+
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3,
+        .markdown-body h4,
+        .markdown-body h5,
+        .markdown-body h6 {
+            line-height: 1.35;
+            font-weight: 700;
+            margin: 0.4rem 0 0.2rem;
+            color: inherit;
+        }
+
+        .markdown-body h1 {
+            font-size: 1.5rem;
+        }
+
+        .markdown-body h2 {
+            font-size: 1.3rem;
+            padding-bottom: 0.35rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .markdown-body h3 {
+            font-size: 1.14rem;
+        }
+
+        .markdown-body p,
+        .markdown-body ul,
+        .markdown-body ol,
+        .markdown-body blockquote,
+        .markdown-body pre,
+        .markdown-body table,
+        .markdown-body hr {
+            margin: 0;
+        }
+
+        .markdown-body ul,
+        .markdown-body ol {
+            padding-left: 1.4rem;
+            display: grid;
+            gap: 0.4rem;
+        }
+
+        .markdown-body li > p {
+            display: inline;
+        }
+
+        .markdown-body blockquote {
+            padding: 0.85rem 1rem;
+            border-left: 4px solid var(--primary);
+            background: var(--surface-soft);
+            color: var(--text-light);
+            border-radius: 0 14px 14px 0;
+        }
+
+        .markdown-body a {
+            color: #d9480f;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .markdown-body a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-body code {
+            font-family: 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.92em;
+            background: rgba(45, 52, 54, 0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 8px;
+        }
+
+        .markdown-body pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 14px;
+            padding: 1rem 1.1rem;
+            overflow-x: auto;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+        }
+
+        .markdown-body pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            border-radius: 0;
+            display: block;
+            line-height: 1.6;
+            white-space: pre;
+        }
+
+        .markdown-body hr {
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            margin: 0.1rem 0;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+        }
+
+        .markdown-body th,
+        .markdown-body td {
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 0.7rem 0.85rem;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .markdown-body th {
+            background: var(--surface-muted);
+            font-weight: 700;
+        }
+
+        .markdown-body tr:nth-child(even) td {
+            background: rgba(247, 247, 251, 0.8);
+        }
+
+        .message.assistant .message-content {
+            background: #f1f3f5;
+            color: var(--text);
+            border-bottom-left-radius: 4px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.65);
+        }
+
+        .message.assistant .message-content .markdown-body h2 {
+            border-bottom-color: rgba(0, 0, 0, 0.06);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.user .message-content code {
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+
+        .message.user .message-content a {
+            color: #fff8db;
+        }
+
+        .message-content h3 {
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .message-content ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin: 5px 0;
+        }
+
+        /* Options Grid */
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .option-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: white;
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #fff0f0;
+            transform: translateY(-1px);
+        }
+
+        .option-btn .emoji {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .option-btn .label {
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        /* Other Input Area */
+        .other-input-area {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .other-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .other-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .other-send-btn {
+            padding: 10px 18px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .other-send-btn:hover {
+            background: #ff5252;
+        }
+
+        /* Input Area */
+        .trip-plan {
+            background: linear-gradient(180deg, #ffffff 0%, #fff9f8 100%);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-top: 16px;
+            border: 1px solid var(--accent-border);
+        }
+
+        .trip-plan .message-content {
+            max-height: none;
+            overflow: visible;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.9;
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 18px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid var(--border);
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .input-area input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .send-btn {
+            padding: 14px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #ff5252;
+            transform: scale(1.02);
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .welcome-screen h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .welcome-screen p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+        }
+
+        .destination-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 16px 20px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .destination-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .start-btn {
+            padding: 16px 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, #ff8e53 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        /* Trip Plan Display */
+        .trip-plan-meta {
+            margin-top: 14px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .trace-panel {
+            margin-top: 14px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .trace-panel summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: #fff8f6;
+        }
+
+        .trace-panel summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .trace-panel summary::after {
+            content: '展开';
+            font-size: 0.82rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .trace-panel[open] summary::after {
+            content: '收起';
+        }
+
+        .trace-panel-body {
+            padding: 14px;
+            display: grid;
+            gap: 12px;
+            background: #fff;
+        }
+
+        .trace-block {
+            border: 1px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 12px;
+            background: #fcfcfd;
+        }
+
+        .trace-block h5 {
+            margin-bottom: 8px;
+            font-size: 0.92rem;
+        }
+
+        .trace-reasoning {
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 0.92rem;
+        }
+
+        .trace-code {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 0.84rem;
+            line-height: 1.6;
+        }
+
+        .trace-list {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+            display: grid;
+            gap: 10px;
+        }
+
+        .trace-item {
+            border: 1px solid #f1f3f5;
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: white;
+        }
+
+        .trace-item-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .trace-tool-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .trace-status {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .trace-status.success {
+            background: #ebfbee;
+            color: #2b8a3e;
+        }
+
+        .trace-status.failed,
+        .trace-status.skipped {
+            background: #fff5f5;
+            color: #c92a2a;
+        }
+
+        .trace-summary {
+            color: var(--text-light);
+            line-height: 1.65;
+            font-size: 0.88rem;
+            margin-top: 6px;
+        }
+
+        .trip-plan-meta h5 {
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .keyword-tag {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #fff3f0;
+            color: #e8590c;
+            font-size: 0.82rem;
+        }
+
+        .ref-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .ref-list li {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .ref-list a {
+            color: var(--primary);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .ref-list a:hover {
+            text-decoration: underline;
+        }
+
+        .ref-list span {
+            color: var(--text-light);
+            font-size: 0.82rem;
+        }
+
+        .day-plan {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .day-plan h5 {
+            color: var(--text);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .day-plan .item {
+            display: flex;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .day-plan .item .icon {
+            width: 24px;
+            text-align: center;
+            margin-right: 8px;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: grid;
+            gap: 12px;
+            padding: 4px 0;
+            min-width: min(360px, 80vw);
+        }
+
+        .loading-card {
+            background: #fffaf8;
+            border: 1px solid rgba(255, 107, 107, 0.14);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .loading-title {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .loading-steps {
+            display: grid;
+            gap: 10px;
+        }
+
+        .loading-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-light);
+            font-size: 0.92rem;
+        }
+
+        .loading-step.active {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .loading-step.done {
+            color: #2b8a3e;
+        }
+
+        .loading-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            background: #dee2e6;
+            flex-shrink: 0;
+        }
+
+        .loading-step.active .loading-dot {
+            background: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.12);
+            animation: pulse 1.4s infinite ease-in-out;
+        }
+
+        .loading-step.done .loading-dot {
+            background: #40c057;
+        }
+
+        .loading-hint {
+            margin-top: 10px;
+            font-size: 0.84rem;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.92); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-action {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                min-height: auto;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+            }
+
+            .options-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .message {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>小途 - AI旅行规划</h1>
+        <p>基于小红书真实笔记的智能规划</p>
+    </header>
+
+    <main class="container">
+        <div class="workspace">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">历史对话</div>
+                    <button class="new-session-btn" id="newSessionBtn">新建</button>
+                </div>
+                <div class="session-list" id="sessionList"></div>
+            </aside>
+
+            <div class="chat-container">
+                <div class="messages" id="messages">
+                    <!-- Welcome Screen -->
+                    <div class="welcome-screen" id="welcomeScreen">
+                        <h2>想去哪里旅行？</h2>
+                        <p>告诉我目的地，我来帮你规划完美的行程</p>
+                        <input type="text" class="destination-input" id="destinationInput"
+                               placeholder="例如：日本东京、韩国首尔...">
+                        <button class="start-btn" id="startBtn">开始规划</button>
+                    </div>
+                </div>
+
+                <div class="input-area" id="inputArea" style="display: none;">
+                    <input type="text" id="messageInput" placeholder="输入您的回答...">
+                    <button class="send-btn" id="sendBtn">发送</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // State
+        let sessionId = null;
+        let currentStage = 0;
+        let isWaitingForResponse = false;
+        let sessionList = [];
+
+        // Elements
+        const messagesEl = document.getElementById('messages');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const inputArea = document.getElementById('inputArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const startBtn = document.getElementById('startBtn');
+        const destinationInput = document.getElementById('destinationInput');
+        const sessionListEl = document.getElementById('sessionList');
+        const newSessionBtn = document.getElementById('newSessionBtn');
+
+        init();
+
+        async function init() {
+            await refreshSessions();
+            const lastSessionId = localStorage.getItem('agentllm_session_id');
+            if (lastSessionId) {
+                const restored = await loadSession(lastSessionId);
+                if (!restored) {
+                    if (sessionList.length > 0) {
+                        await loadSession(sessionList[0].session_id);
+                    } else {
+                        showWelcomeScreen();
+                    }
+                }
+            } else if (sessionList.length > 0) {
+                await loadSession(sessionList[0].session_id);
+            } else {
+                showWelcomeScreen();
+            }
+        }
+
+        // Start button click
+        startBtn.addEventListener('click', () => {
+            const destination = destinationInput.value.trim();
+            if (!destination) {
+                destinationInput.focus();
+                return;
+            }
+            startConversation(destination);
+        });
+
+        newSessionBtn.addEventListener('click', async () => {
+            await createNewSession();
+        });
+
+        // Enter key on destination input
+        destinationInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startBtn.click();
+            }
+        });
+
+        // Send button click
+        sendBtn.addEventListener('click', sendMessage);
+
+        // Enter key on message input
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !isWaitingForResponse) {
+                sendMessage();
+            }
+        });
+
+        async function startConversation(destination) {
+            if (!sessionId) {
+                await createNewSession();
+            }
+            welcomeScreen.style.display = 'none';
+            inputArea.style.display = 'flex';
+
+            // Send initial message
+            await sendToServer(destination);
+        }
+
+        async function createNewSession() {
+            const response = await fetch('/api/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || '无法创建会话');
+            }
+            sessionId = data.session_id;
+            currentStage = data.current_stage || 0;
+            localStorage.setItem('agentllm_session_id', sessionId);
+            clearChatView();
+            displayMessages([]);
+            displayTripPlan(null);
+            showWelcomeScreen();
+            await refreshSessions();
+            highlightActiveSession();
+            return sessionId;
+        }
+
+        async function refreshSessions() {
+            const response = await fetch('/api/sessions');
+            const data = await response.json();
+            sessionList = data.sessions || [];
+            renderSessionList();
+        }
+
+        function renderSessionList() {
+            sessionListEl.innerHTML = '';
+            if (!sessionList.length) {
+                sessionListEl.innerHTML = '<div class="empty-sessions">暂无历史对话，点击右上角新建开始。</div>';
+                return;
+            }
+
+            sessionList.forEach(item => {
+                const title = (item.title || '新的旅行规划').trim();
+                const safeTitle = escapeHtml(title || '新的旅行规划');
+                const metaText = `${formatSessionTime(item.updated_at)} · ${item.message_count || 0} 条消息`;
+                const el = document.createElement('div');
+                el.className = `session-item${item.session_id === sessionId ? ' active' : ''}`;
+                el.innerHTML = `
+                    <div class="session-item-title">${safeTitle}</div>
+                    <div class="session-item-meta">${escapeHtml(metaText)}</div>
+                    <div class="session-item-actions">
+                        <button class="session-delete-btn" data-session-delete="${item.session_id}">删除</button>
+                    </div>
+                `;
+                el.addEventListener('click', async (event) => {
+                    if (event.target.closest('.session-delete-btn')) {
+                        return;
+                    }
+                    await loadSession(item.session_id);
+                });
+                el.querySelector('.session-delete-btn').addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    await deleteSession(item.session_id);
+                });
+                sessionListEl.appendChild(el);
+            });
+        }
+
+        async function loadSession(targetSessionId) {
+            if (!targetSessionId) return false;
+            const response = await fetch(`/api/sessions/${targetSessionId}`);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    localStorage.removeItem('agentllm_session_id');
+                }
+                return false;
+            }
+            const data = await response.json();
+            sessionId = data.session_id;
+            currentStage = data.current_stage || 0;
+            localStorage.setItem('agentllm_session_id', sessionId);
+            welcomeScreen.style.display = 'none';
+            inputArea.style.display = 'flex';
+            displayMessages(data.messages || []);
+            displayTripPlan(data.trip_plan || null);
+            if (!(data.messages || []).length) {
+                showWelcomeScreen();
+            }
+            highlightActiveSession();
+            return true;
+        }
+
+        async function deleteSession(targetSessionId) {
+            await fetch(`/api/sessions/${targetSessionId}`, { method: 'DELETE' });
+            if (targetSessionId === sessionId) {
+                sessionId = null;
+                localStorage.removeItem('agentllm_session_id');
+                clearChatView();
+                showWelcomeScreen();
+            }
+            await refreshSessions();
+        }
+
+        function highlightActiveSession() {
+            document.querySelectorAll('.session-item').forEach((itemEl) => {
+                const deleteBtn = itemEl.querySelector('.session-delete-btn');
+                const currentId = deleteBtn?.dataset.sessionDelete;
+                itemEl.classList.toggle('active', currentId === sessionId);
+            });
+        }
+
+        function showWelcomeScreen() {
+            clearChatView();
+            welcomeScreen.style.display = 'block';
+            inputArea.style.display = 'none';
+        }
+
+        function clearChatView() {
+            document.querySelectorAll('#messages .message, #messages .trip-plan').forEach((el) => el.remove());
+            welcomeScreen.style.display = 'none';
+        }
+
+        function formatSessionTime(value) {
+            if (!value) return '刚刚';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleString('zh-CN', {
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function parseInlineMarkdown(text) {
+            let html = escapeHtml(text);
+            html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%; border-radius:12px; margin-top:8px;" />');
+            html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+            html = html.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>');
+            html = html.replace(/(^|[^_])_([^_]+)_(?!_)/g, '$1<em>$2</em>');
+            html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+            return html;
+        }
+
+        function isTableSeparator(line) {
+            const trimmed = line.trim();
+            if (!trimmed.includes('|')) return false;
+            const core = trimmed.replace(/^\|/, '').replace(/\|$/, '');
+            return core.split('|').every(cell => /^\s*:?-{3,}:?\s*$/.test(cell));
+        }
+
+        function parseTableRow(line) {
+            return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => parseInlineMarkdown(cell.trim()));
+        }
+
+        function renderMarkdownTable(lines) {
+            if (lines.length < 2 || !isTableSeparator(lines[1])) {
+                return lines.map(line => `<p>${parseInlineMarkdown(line)}</p>`).join('');
+            }
+
+            const headers = parseTableRow(lines[0]);
+            const bodyRows = lines.slice(2).map(parseTableRow);
+
+            return `
+                <table>
+                    <thead>
+                        <tr>${headers.map(cell => `<th>${cell}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${bodyRows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function formatContent(content) {
+            if (!content) return '';
+
+            const normalized = String(content).replace(/\r\n?/g, '\n').trim();
+            if (!normalized) return '';
+
+            const lines = normalized.split('\n');
+            const blocks = [];
+            let paragraph = [];
+            let listBuffer = [];
+            let orderedList = false;
+            let quoteBuffer = [];
+            let codeBuffer = [];
+            let inCodeBlock = false;
+            let tableBuffer = [];
+
+            const flushParagraph = () => {
+                if (!paragraph.length) return;
+                blocks.push(`<p>${parseInlineMarkdown(paragraph.join('<br>'))}</p>`);
+                paragraph = [];
+            };
+
+            const flushList = () => {
+                if (!listBuffer.length) return;
+                const tag = orderedList ? 'ol' : 'ul';
+                blocks.push(`<${tag}>${listBuffer.map(item => `<li>${parseInlineMarkdown(item)}</li>`).join('')}</${tag}>`);
+                listBuffer = [];
+                orderedList = false;
+            };
+
+            const flushQuote = () => {
+                if (!quoteBuffer.length) return;
+                blocks.push(`<blockquote>${quoteBuffer.map(line => parseInlineMarkdown(line)).join('<br>')}</blockquote>`);
+                quoteBuffer = [];
+            };
+
+            const flushTable = () => {
+                if (!tableBuffer.length) return;
+                blocks.push(renderMarkdownTable(tableBuffer));
+                tableBuffer = [];
+            };
+
+            const flushAll = () => {
+                flushParagraph();
+                flushList();
+                flushQuote();
+                flushTable();
+            };
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+
+                if (trimmed.startsWith('```')) {
+                    flushAll();
+                    if (inCodeBlock) {
+                        blocks.push(`<pre><code>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`);
+                        codeBuffer = [];
+                        inCodeBlock = false;
+                    } else {
+                        inCodeBlock = true;
+                    }
+                    continue;
+                }
+
+                if (inCodeBlock) {
+                    codeBuffer.push(line);
+                    continue;
+                }
+
+                if (!trimmed) {
+                    flushAll();
+                    continue;
+                }
+
+                if (/^#{1,6}\s+/.test(trimmed)) {
+                    flushAll();
+                    const level = Math.min(6, trimmed.match(/^#+/)[0].length);
+                    const text = trimmed.replace(/^#{1,6}\s+/, '');
+                    blocks.push(`<h${level}>${parseInlineMarkdown(text)}</h${level}>`);
+                    continue;
+                }
+
+                if (/^([-*_])\1{2,}$/.test(trimmed)) {
+                    flushAll();
+                    blocks.push('<hr>');
+                    continue;
+                }
+
+                if (trimmed.startsWith('>')) {
+                    flushParagraph();
+                    flushList();
+                    flushTable();
+                    quoteBuffer.push(trimmed.replace(/^>\s?/, ''));
+                    continue;
+                }
+
+                if (/^[-*+]\s+/.test(trimmed)) {
+                    flushParagraph();
+                    flushQuote();
+                    flushTable();
+                    if (listBuffer.length && orderedList) flushList();
+                    orderedList = false;
+                    listBuffer.push(trimmed.replace(/^[-*+]\s+/, ''));
+                    continue;
+                }
+
+                if (/^\d+\.\s+/.test(trimmed)) {
+                    flushParagraph();
+                    flushQuote();
+                    flushTable();
+                    if (listBuffer.length && !orderedList) flushList();
+                    orderedList = true;
+                    listBuffer.push(trimmed.replace(/^\d+\.\s+/, ''));
+                    continue;
+                }
+
+                if (trimmed.includes('|')) {
+                    flushParagraph();
+                    flushList();
+                    flushQuote();
+                    tableBuffer.push(trimmed);
+                    continue;
+                }
+
+                if (tableBuffer.length) {
+                    flushTable();
+                }
+
+                paragraph.push(trimmed);
+            }
+
+            flushAll();
+
+            if (inCodeBlock) {
+                blocks.push(`<pre><code>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`);
+            }
+
+            return `<div class="markdown-body">${blocks.join('')}</div>`;
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isWaitingForResponse) return;
+
+            const isCustomOther = messageInput.dataset.awaitingOther === 'true';
+            messageInput.value = '';
+            isWaitingForResponse = true;
+            sendBtn.disabled = true;
+
+            // 清除状态
+            messageInput.dataset.awaitingOther = 'false';
+            messageInput.placeholder = '请输入您想去的目的地...';
+
+            await sendToServer(message, isCustomOther);
+        }
+
+        async function sendToServer(message, isCustomOther = false) {
+            const loadingEl = addLoadingMessage();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: sessionId,
+                        is_custom: isCustomOther
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || data.message || 'request failed');
+                }
+                sessionId = data.session_id;
+                currentStage = data.current_stage;
+                localStorage.setItem('agentllm_session_id', sessionId);
+                await refreshSessions();
+                highlightActiveSession();
+
+                if (typeof loadingEl.cleanup === 'function') {
+                    loadingEl.cleanup();
+                }
+                loadingEl.remove();
+
+                displayMessages(data.messages || []);
+
+                if (data.next_question) {
+                    addMessage('assistant', data.next_question, data.next_options || []);
+                }
+
+                if (data.trip_plan) {
+                    displayTripPlan(data.trip_plan);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                if (typeof loadingEl.cleanup === 'function') {
+                    loadingEl.cleanup();
+                }
+                loadingEl.remove();
+                addMessage('assistant', error.message || '抱歉，服务出错了，请重试。');
+            }
+
+            isWaitingForResponse = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
+
+        async function selectOption(value, label) {
+            if (isWaitingForResponse) return;
+
+            isWaitingForResponse = true;
+            sendBtn.disabled = true;
+
+            const customField = document.getElementById('customInputField');
+            const customText = (value === '其他' && customField) ? customField.value.trim() : '';
+
+            const loadingEl = addLoadingMessage();
+
+            try {
+                const response = await fetch('/api/select', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        value: value,
+                        session_id: sessionId,
+                        custom_text: customText
+                    })
+                });
+
+                const data = await response.json();
+                if (typeof loadingEl.cleanup === 'function') {
+                    loadingEl.cleanup();
+                }
+                loadingEl.remove();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '请求失败');
+                }
+
+                // 重新渲染全部消息（包含用户消息）
+                displayMessages(data.messages || []);
+                currentStage = data.current_stage || currentStage;
+                await refreshSessions();
+                highlightActiveSession();
+
+                // 追加下一轮问题 + 选项（不重复）
+                // 逻辑：如果 messages 的最后一条已经是助手消息且内容等于 next_question，
+                // 说明助手消息已由 displayMessages 展示，无需再追加
+                if (data.next_question) {
+                    const msgs = data.messages || [];
+                    const lastMsg = msgs[msgs.length - 1];
+                    const alreadyShown = lastMsg && lastMsg.role === 'assistant' && lastMsg.content === data.next_question;
+                    if (!alreadyShown) {
+                        addMessage('assistant', data.next_question, data.next_options || []);
+                    }
+                }
+
+                // 如果有规划结果
+                if (data.trip_plan) {
+                    displayTripPlan(data.trip_plan);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                if (typeof loadingEl.cleanup === 'function') {
+                    loadingEl.cleanup();
+                }
+                loadingEl.remove();
+                addMessage('assistant', error.message || '抱歉，服务出错了，请重试。');
+            }
+
+            isWaitingForResponse = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
+
+        function addMessage(role, content, options = null) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${role}`;
+
+            let html = `<div class="message-content">${formatContent(content)}</div>`;
+
+            if (options && options.length > 0) {
+                html += `<div class="options-grid">`;
+                options.forEach(opt => {
+                    const emoji = opt.emoji || '👉';
+                    html += `
+                        <button class="option-btn" data-value="${opt.value}" data-label="${opt.label || opt.value}">
+                            <span class="emoji">${emoji}</span>
+                            <span class="label">${opt.label || opt.value}</span>
+                        </button>
+                    `;
+                });
+                html += `</div>`;
+
+                // 其他输入区域：输入框 + 发送按钮
+                html += `
+                    <div class="other-input-area" id="otherInputArea">
+                        <input type="text" class="other-input" id="otherInputField"
+                               placeholder="输入自定义内容后点击发送...">
+                        <button class="other-send-btn" id="otherSendBtn">发送</button>
+                    </div>
+                `;
+            }
+
+            messageEl.innerHTML = html;
+            messagesEl.appendChild(messageEl);
+            scrollToBottom();
+
+            // Bind option buttons
+            messageEl.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.dataset.value;
+                    if (val === '其他') {
+                        // 滚动到主输入框，提示用户输入
+                        messageInput.focus();
+                        messageInput.placeholder = '请输入您的自定义需求，回车发送...';
+                        messageInput.dataset.awaitingOther = 'true';
+                        messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        // 清除其他状态
+                        messageInput.placeholder = '请输入您想去的目的地...';
+                        messageInput.dataset.awaitingOther = 'false';
+                        selectOption(val, btn.dataset.label);
+                    }
+                });
+            });
+
+            // 绑定"其他"输入区的发送按钮（备用方式）
+            const otherSendBtn = messageEl.querySelector('#otherSendBtn');
+            const otherInputField = messageEl.querySelector('#otherInputField');
+            if (otherSendBtn && otherInputField) {
+                otherSendBtn.addEventListener('click', () => {
+                    const text = otherInputField.value.trim();
+                    if (text) {
+                        // 清空气泡内的输入
+                        otherInputField.value = '';
+                        // 用主输入框发送
+                        messageInput.value = text;
+                        messageInput.dataset.awaitingOther = 'true';
+                        sendMessage();
+                    }
+                });
+                otherInputField.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        otherSendBtn.click();
+                    }
+                });
+            }
+
+            return messageEl;
+        }
+
+        function addLoadingMessage() {
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message assistant';
+
+            const steps = [
+                'Agent 正在理解需求',
+                'RAG 正在规划关键词',
+                'RAG 正在检索攻略',
+                'Skill 正在调用工具',
+                '正在整理最终行程'
+            ];
+
+            messageEl.innerHTML = `
+                <div class="message-content">
+                    <div class="loading-card">
+                        <div class="loading-title">正在为您规划旅行</div>
+                        <div class="loading">
+                            <div class="loading-steps">
+                                ${steps.map((step, index) => `
+                                    <div class="loading-step ${index === 0 ? 'active' : ''}" data-loading-step>
+                                        <span class="loading-dot"></span>
+                                        <span>${step}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="loading-hint" data-loading-hint>
+                                通常会先完成需求规划，再做 RAG 检索和 Skill 查询。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            messagesEl.appendChild(messageEl);
+            scrollToBottom();
+
+            const stepEls = Array.from(messageEl.querySelectorAll('[data-loading-step]'));
+            const hintEl = messageEl.querySelector('[data-loading-hint]');
+            let currentIndex = 0;
+
+            const hints = [
+                '正在根据您的需求确定关键查询方向。',
+                '正在生成更贴近目的地的 RAG 搜索词。',
+                '正在检索相关游记、攻略和评论。',
+                '正在调用天气、景点、酒店等工具。',
+                '正在汇总结果并生成最终行程。'
+            ];
+
+            const timer = window.setInterval(() => {
+                if (!stepEls.length) return;
+
+                stepEls.forEach((el, index) => {
+                    el.classList.toggle('done', index < currentIndex);
+                    el.classList.toggle('active', index === currentIndex);
+                });
+
+                if (hintEl) {
+                    hintEl.textContent = hints[currentIndex] || hints[hints.length - 1];
+                }
+
+                if (currentIndex < stepEls.length - 1) {
+                    currentIndex += 1;
+                }
+            }, 1200);
+
+            messageEl.cleanup = () => window.clearInterval(timer);
+            return messageEl;
+        }
+
+        function displayMessages(messages) {
+            // 清空聊天区域（保留欢迎层）
+            const msgsDiv = document.getElementById('messages');
+            msgsDiv.querySelectorAll('.message').forEach(el => el.remove());
+
+            messages.forEach(msg => {
+                addMessage(msg.role, msg.content, msg.options);
+            });
+        }
+
+        function displayTripPlan(plan) {
+            document.querySelectorAll('#messages .trip-plan').forEach(el => el.remove());
+            if (!plan) return;
+
+            const planText = typeof plan === 'string' ? plan : (plan.content || plan.text || '');
+            if (!planText) return;
+
+            const keywords = Array.isArray(plan.rag_keywords) ? plan.rag_keywords : [];
+            const references = Array.isArray(plan.references) ? plan.references : [];
+            const agentTrace = plan.agent_trace && typeof plan.agent_trace === 'object' ? plan.agent_trace : {};
+            const ragTrace = agentTrace.rag_trace && typeof agentTrace.rag_trace === 'object' ? agentTrace.rag_trace : {};
+            const plannerReasoning = agentTrace.planner_reasoning || plan.planner_reasoning || '';
+            const plannedToolArguments = agentTrace.planned_tool_arguments || plan.planned_tool_arguments || {};
+            const toolOutputs = Array.isArray(agentTrace.tool_outputs) ? agentTrace.tool_outputs : (Array.isArray(plan.tool_outputs) ? plan.tool_outputs : []);
+            const failedTools = Array.isArray(agentTrace.failed_tools) ? agentTrace.failed_tools : (Array.isArray(plan.failed_tools) ? plan.failed_tools : []);
+            const traceWarnings = Array.isArray(agentTrace.warnings) ? agentTrace.warnings : (Array.isArray(plan.warnings) ? plan.warnings : []);
+            const refsHtml = references.length
+                ? `
+                    <div class="trip-plan-meta">
+                        <h5>参考笔记链接</h5>
+                        <ul class="ref-list">
+                            ${references.map(ref => {
+                                const label = ref.place || ref.name || '参考笔记';
+                                const score = typeof ref.score === 'number' ? ` · 相关度 ${ref.score.toFixed(2)}` : '';
+                                const collection = ref.collection ? ` · collection: ${escapeHtml(ref.collection)}` : '';
+                                const queries = Array.isArray(ref.queries) && ref.queries.length
+                                    ? ` · 命中查询: ${escapeHtml(ref.queries.join(' / '))}`
+                                    : '';
+                                const url = ref.url || '#';
+                                return `<li><a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a><span>${score}${collection}${queries}</span></li>`;
+                            }).join('')}
+                        </ul>
+                    </div>
+                `
+                : `<div class="trip-plan-meta"><h5>参考笔记链接</h5><div class="empty-meta">暂无可显示的笔记链接</div></div>`;
+            const ragQueryItems = Array.isArray(ragTrace.queries)
+                ? ragTrace.queries.map(item => {
+                    const topDocs = Array.isArray(item.top_docs) && item.top_docs.length
+                        ? `<ul class="ref-list">${item.top_docs.map(doc => `<li><span>${escapeHtml(doc.title || '未命名文档')} · ${escapeHtml(doc.type || 'unknown')} · score ${typeof doc.score === 'number' ? doc.score.toFixed(4) : doc.score || '0'}${doc.url ? ` · <a href="${doc.url}" target="_blank" rel="noopener noreferrer">链接</a>` : ''}</span></li>`).join('')}</ul>`
+                        : '<div class="empty-meta">该查询未命中文档</div>';
+                    const error = item.error ? `<div class="trace-summary">错误：${escapeHtml(item.error)}</div>` : '';
+                    return `
+                        <div class="trace-block">
+                            <h5>查询：${escapeHtml(item.query || '')}</h5>
+                            <div class="trace-summary">命中数量：${escapeHtml(String(item.hit_count ?? 0))}</div>
+                            ${error}
+                            ${topDocs}
+                        </div>
+                    `;
+                }).join('')
+                : '';
+            const ragSummaryHtml = Object.keys(ragTrace).length
+                ? `
+                    <details class="trace-panel">
+                        <summary>RAG 检索详情</summary>
+                        <div class="trace-panel-body">
+                            <div class="trace-block">
+                                <h5>检索概览</h5>
+                                <div class="trace-reasoning">collection: ${escapeHtml(ragTrace.collection || 'unknown')}<br>目的地: ${escapeHtml(ragTrace.destination || plan.destination || '')}<br>状态: ${escapeHtml(ragTrace.status || 'unknown')}<br>融合结果: ${escapeHtml(String(ragTrace.fused_result_count ?? 0))} 条<br>最终选用：笔记 ${escapeHtml(String(ragTrace.selected_notes ?? 0))} 条，评论 ${escapeHtml(String(ragTrace.selected_comments ?? 0))} 条</div>
+                            </div>
+                            <div class="trace-block">
+                                <h5>RAG 关键词 / 查询词</h5>
+                                <div class="keyword-tags">${(Array.isArray(ragTrace.search_queries) ? ragTrace.search_queries : keywords).map(k => `<span class="keyword-tag">${escapeHtml(k)}</span>`).join('') || '<span class="empty-meta">暂无关键词</span>'}</div>
+                            </div>
+                            ${ragQueryItems || '<div class="trace-block"><div class="empty-meta">暂无 query 命中详情</div></div>'}
+                        </div>
+                    </details>
+                `
+                : '';
+            const keywordHtml = keywords.length
+                ? `
+                    <div class="trip-plan-meta">
+                        <h5>RAG 关键词</h5>
+                        <div class="keyword-tags">
+                            ${keywords.map(k => `<span class="keyword-tag">${escapeHtml(k)}</span>`).join('')}
+                        </div>
+                    </div>
+                `
+                : `<div class="trip-plan-meta"><h5>RAG 关键词</h5><div class="empty-meta">暂无关键词</div></div>`;
+
+            const traceToolItems = [...toolOutputs, ...failedTools].map(item => {
+                const toolName = escapeHtml(item.tool || 'unknown_tool');
+                const status = escapeHtml(item.status || 'unknown');
+                const summary = item.summary ? `<div class="trace-summary">${escapeHtml(item.summary)}</div>` : '';
+                const raw = item.raw != null
+                    ? `<pre class="trace-code">${escapeHtml(typeof item.raw === 'string' ? item.raw : JSON.stringify(item.raw, null, 2))}</pre>`
+                    : '';
+                return `
+                    <li class="trace-item">
+                        <div class="trace-item-header">
+                            <span class="trace-tool-name">${toolName}</span>
+                            <span class="trace-status ${status}">${status}</span>
+                        </div>
+                        ${summary}
+                        ${raw}
+                    </li>
+                `;
+            }).join('');
+
+            const warningHtml = traceWarnings.length
+                ? `<div class="trace-block"><h5>告警</h5><ul class="ref-list">${traceWarnings.map(item => `<li><span>${escapeHtml(item)}</span></li>`).join('')}</ul></div>`
+                : '';
+
+            const traceHtml = plannerReasoning || Object.keys(plannedToolArguments).length || traceToolItems || warningHtml
+                ? `
+                    <details class="trace-panel">
+                        <summary>Agent & Skill 调用过程</summary>
+                        <div class="trace-panel-body">
+                            <div class="trace-block">
+                                <h5>Planner 决策原因</h5>
+                                <div class="trace-reasoning">${plannerReasoning ? escapeHtml(plannerReasoning) : '暂无 planner reasoning'}</div>
+                            </div>
+                            <div class="trace-block">
+                                <h5>Planner 生成的工具参数</h5>
+                                <pre class="trace-code">${escapeHtml(JSON.stringify(plannedToolArguments, null, 2) || '{}')}</pre>
+                            </div>
+                            <div class="trace-block">
+                                <h5>Skill 执行结果</h5>
+                                ${traceToolItems ? `<ul class="trace-list">${traceToolItems}</ul>` : '<div class="empty-meta">暂无 skill 调用记录</div>'}
+                            </div>
+                            ${warningHtml}
+                        </div>
+                    </details>
+                `
+                : '';
+
+            const planEl = document.createElement('div');
+            planEl.className = 'trip-plan';
+
+            planEl.innerHTML = `
+                <h4>📋 您的 ${escapeHtml(plan.destination || '')} 旅行规划</h4>
+                <div class="message-content" style="margin-top:12px;">
+                    ${formatContent(planText)}
+                </div>
+                ${traceHtml}
+                ${ragSummaryHtml}
+                ${keywordHtml}
+                ${refsHtml}
+                <div class="quick-actions">
+                    <button class="quick-action">调整行程</button>
+                    <button class="quick-action">查看详情</button>
+                </div>
+            `;
+            messagesEl.appendChild(planEl);
+            scrollToBottom();
+        }
+
+
+
+        function scrollToBottom() {
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+    </script>
+</body>
+</html>

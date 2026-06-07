@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec uv run \
+  --with skyfield==1.54 \
+  --with jplephem==2.24 \
+  python "${SCRIPT_DIR}/huangli_calc.py" "$@"

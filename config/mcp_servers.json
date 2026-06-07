@@ -1,0 +1,91 @@
+{
+  "servers": {
+    "gaode-weather": {
+      "transport": "streamable_http",
+      "url": "https://mcp.api-inference.modelscope.net/51b21fdeee6c4b/mcp",
+      "enabled": true,
+      "timeout_seconds": 15,
+      "tool_name": "weather_lookup",
+      "headers": {},
+      "metadata": {
+        "provider": "ModelScope",
+        "category": "weather",
+        "tool_hint": "高德天气服务"
+      }
+    },
+    "gaode-poi": {
+      "transport": "streamable_http",
+      "url": "https://mcp.api-inference.modelscope.net/51b21fdeee6c4b/mcp",
+      "enabled": true,
+      "timeout_seconds": 20,
+      "tool_name": "poi_search",
+      "headers": {},
+      "metadata": {
+        "provider": "ModelScope",
+        "category": "poi",
+        "tool_hint": "高德 POI 搜索"
+      }
+    },
+    "gaode-hotel": {
+      "transport": "streamable_http",
+      "url": "https://mcp.api-inference.modelscope.net/51b21fdeee6c4b/mcp",
+      "enabled": true,
+      "timeout_seconds": 20,
+      "tool_name": "hotel_search",
+      "headers": {},
+      "metadata": {
+        "provider": "ModelScope",
+        "category": "hotel",
+        "tool_hint": "高德酒店搜索"
+      }
+    },
+    "cn-rail": {
+      "transport": "streamable_http",
+      "url": "https://mcp.api-inference.modelscope.net/b6bf008de4cc48/mcp",
+      "enabled": true,
+      "timeout_seconds": 20,
+      "tool_name": "train_search",
+      "headers": {},
+      "metadata": {
+        "provider": "ModelScope",
+        "category": "transport",
+        "tool_hint": "12306 列车查询"
+      }
+    },
+    "lunar-calendar": {
+      "transport": "streamable_http",
+      "url": "https://mcp.api-inference.modelscope.net/ed64a33aa12f4f/mcp",
+      "enabled": true,
+      "timeout_seconds": 20,
+      "tool_name": "",
+      "headers": {},
+      "metadata": {
+        "provider": "ModelScope",
+        "category": "calendar",
+        "tool_hint": "农历/黄历服务"
+      }
+    },
+    "flight-ticket": {
+      "transport": "streamable_http",
+      "url": "https://mcp.api-inference.modelscope.net/bfc8f5ecc01b44/mcp",
+      "enabled": true,
+      "timeout_seconds": 20,
+      "tool_name": "flight_search",
+      "headers": {},
+      "metadata": {
+        "provider": "ModelScope",
+        "category": "flight",
+        "tool_hint": "机票查询服务"
+      }
+    }
+  },
+  "agent": {
+    "name": "TravelPlannerAssistant",
+    "instructions": "你是一名专业的旅行规划智能助手。Web 主流程通过 travel_agent/skills/SkillRunner 本地执行工具：高德天气/POI、RollingGo 酒店/航班、老黄历。境外目的地跳过境内高德工具。本 MCP 配置为可选远程接入示例。"
+  },
+  "_comment": {
+    "usage": "MCP 远程服务配置示例；当前 Web 多智能体默认走 SkillRunner 本地执行（.agents/skills + npx CLI）。",
+    "local_tools": "weather_lookup, poi_search → 高德 REST；hotel_search → npx rollinggo；flight_search → npx rollinggo-flight；calendar_lookup → lao-huangli 脚本",
+    "note": "servers 键名需与 travel_agent/mcp/registry.py 中 server_name 对齐。"
+  }
+}

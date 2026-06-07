@@ -1,0 +1,41 @@
+# Travel Agent 依赖
+
+# LangChain & LangGraph
+langchain>=0.3.0
+langchain-community>=0.3.0
+langgraph>=0.2.0
+
+# LLM
+dashscope>=1.20.0
+
+# Embedding & Vector
+chromadb>=0.5.0
+sentence-transformers>=3.0.0
+
+# Flask Web
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Data Processing
+pydantic>=2.5.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# HTTP Client
+requests>=2.32.0
+httpx>=0.28.0
+
+# MCP 工具
+mcp>=1.27.0,<1.28.0
+openai-agents>=0.17.0,<0.18.0
+httpx-sse>=0.4.0,<0.5.0
+anyio>=4.0.0,<5.0.0
+python-dotenv>=1.0.0
+
+# 老黄历 skill（lao-huangli）
+skyfield==1.54
+jplephem==2.24
+
+# Optional: For advanced NLP
+# transformers>=4.40.0
+# torch>=2.0.0
